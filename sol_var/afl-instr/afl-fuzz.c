@@ -172,7 +172,7 @@ EXP_ST u8* trace_bits;                /* SHM with instrumentation bitmap, change
 //           virgin_tmout[MAP_SIZE],    /* Bits we haven't seen in tmouts   */
 //           virgin_crash[MAP_SIZE];    /* Bits we haven't seen in crashes  */
 
-EXP_ST u8  virgin_bits[MAX_AMOUNT_OF_PROGS][MAP_SIZE],     /* Regions yet untouched by fuzzing */
+EXP_ST u8  virgin_bits[MAP_SIZE],     /* Regions yet untouched by fuzzing */
            virgin_tmout[MAX_AMOUNT_OF_PROGS][MAP_SIZE],    /* Bits we haven't seen in tmouts   */
            virgin_crash[MAX_AMOUNT_OF_PROGS][MAP_SIZE];    /* Bits we haven't seen in crashes  */
 
@@ -941,7 +941,7 @@ EXP_ST void write_bitmap(void) {
   if (fd_delta < 0) PFATAL("Unable to open '%s'", fname_delta);
 
   //ck_write(fd, virgin_bits[CUR_PROG], MAP_SIZE, fname);
-  ck_write(fd_delta, virgin_bits[CUR_PROG], MAP_SIZE, fname_delta);
+  ck_write(fd_delta, virgin_bits, MAP_SIZE, fname_delta);
 
   //close(fd);
   close(fd_delta);
@@ -1031,7 +1031,7 @@ static inline u8 has_new_bits(u8* virgin_map) {
 
   } // end of while
 
-  if (ret && virgin_map == virgin_bits[CUR_PROG]) bitmap_changed = 1;
+  if (ret && virgin_map == virgin_bits) bitmap_changed = 1;
 
   return ret;
 
@@ -1449,7 +1449,7 @@ EXP_ST void setup_shm(void) {
 
   if (!in_bitmap){ 
     for(int i = 0; i < numbr_of_progs_under_test; i++){
-      memset(virgin_bits[i], 255, MAP_SIZE);
+      memset(virgin_bits, 255, MAP_SIZE);
     }
   }
 
@@ -2764,7 +2764,7 @@ static u8 calibrate_case(char** argv, struct queue_entry* q, u8* use_mem,
 
     if (q->exec_cksum != cksum) {
 
-      u8 hnb = has_new_bits(virgin_bits[CUR_PROG]);
+      u8 hnb = has_new_bits(virgin_bits );
       if (hnb > new_bits) new_bits = hnb;
 
       if (q->exec_cksum) {
@@ -3167,7 +3167,7 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* Keep only if there are new bits in the map, add to queue for
        future fuzzing, etc. */
     
-    if (!(hnb = has_new_bits( virgin_bits[CUR_PROG] ))) {
+    if (!(hnb = has_new_bits( virgin_bits))) {
       if (crash_mode) total_crashes++;
       return 0;
     }    
@@ -4565,7 +4565,7 @@ static void show_stats(void) {
 
   /* Do some bitmap stats. */
 
-  t_bytes = count_non_255_bytes(virgin_bits[CUR_PROG]);
+  t_bytes = count_non_255_bytes( virgin_bits );
   t_byte_ratio = ((double)t_bytes * 100) / MAP_SIZE;
 
   if (t_bytes) 
@@ -4606,7 +4606,7 @@ static void show_stats(void) {
 
   /* Compute some mildly useful bitmap stats. */
 
-  t_bits = (MAP_SIZE << 3) - count_bits(virgin_bits[CUR_PROG]);
+  t_bits = (MAP_SIZE << 3) - count_bits( virgin_bits );
 
   /* Now, for the visuals... */
 
@@ -8601,7 +8601,7 @@ static void save_entry_in_prog_if_interesting(struct queue_entry *q, char **argv
   fault = run_target(exec_tmout);
 
   
-  if ( !(hnb = has_new_bits(virgin_bits[CUR_PROG])) ) {
+  if ( !(hnb = has_new_bits( virgin_bits )) ) {
       if (crash_mode) total_crashes++;
       //not interesting, do something
     }
