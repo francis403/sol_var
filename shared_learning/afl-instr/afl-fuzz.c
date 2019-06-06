@@ -8422,7 +8422,7 @@ int main(int argc, char** argv) {
     read_prev_outdir(tmp, use_argv);
     //printf("tmp = %s\n", tmp);
     // idea, run the program and aplly saave_if_interesting
-
+     cull_queue();
     // TODO  -> need to pass through each element in the tmp
 
     has_information_to_learn = 0;
