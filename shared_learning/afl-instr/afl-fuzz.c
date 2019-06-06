@@ -3577,6 +3577,8 @@ EXP_ST u8 share_fuzz_info(char** argv, u8* fname, struct stat st) {
 
   in_buf = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
+  close(fd);
+
   out_buf = ck_alloc_nozero(len);
 
   if (post_handler) {
