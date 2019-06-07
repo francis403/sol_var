@@ -51,6 +51,8 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 
+#include <ctype.h>
+
 static u8** as_params;          /* Parameters passed to the real 'as'   */
 
 static u8*  input_file;         /* Originally specified input file      */
@@ -271,14 +273,14 @@ unsigned long hash_string(char *input){
 
 int hash_test( char *input ){
 
-	int hash = 0;
-	int len = strlen(input);
+  int hash = 0;
+  int len = strlen(input);
 
-	for( int i = 0; i < len; i++ ){
-		hash = hash + ((hash) << 5) + *(input + i) + (( *(input + i)) << 7);
-	}
+  for( int i = 0; i < len; i++ ){
+    hash = hash + ((hash) << 5) + *(input + i) + (( *(input + i)) << 7);
+  }
 
-	return ((hash) ^ (hash >> 16)) & 0xffff;
+  return ((hash) ^ (hash >> 16)) & 0xffff;
 
 }
 
@@ -319,25 +321,44 @@ unsigned int blockIDGenerator(char *block){
     char *rest = line;
     char *command; // the word in the line (the command)
     
+    // passar por todos os argumentos da linha
     while((command = strtok_r(rest, "\t", &rest))){
+
+      //printf("command = %s first = %c\n", command, command[0]);
+
+
+      // comando é inutil?
       if(command[0] == '.' || command[1] == '.' || 
-        command[0] == '%' || command[0] == '$' ) { continue; }
+        command[0] == '%' || isdigit(command[0]) ) { continue; }
+      // antigamente cortavamos isto
+      if( command[0] == '$' && !isdigit(command[1]))
+        continue;
 
 
       //SPECIAL CASES
-      if( strcmp(command, "call") ){
+      if( strcmp(command, "call") == 0 ){
         concatInto(&string_to_hash, command);
         continue;
       }
-      else if( command[0] == '$' && command[1] != '.' ){
-        //another special case
-    
-        //concatInfo(&string_to_hash, var);
+
+      else if( command[0] == '$' ){
+          //printf("found $\n");
+
+        char *com_rest = command;
+        char *imp = strtok_r(com_rest, "," , &com_rest);
+
+        concatInto(&string_to_hash, imp);
+
+        //free(imp);
+
         continue;
       }
+
+    
+
       //printf("%s\n", command);
       concatInto(&string_to_hash, command);
-    }
+    } // end of while
     free(command);    
     //concatInto(string_to_hash, line[0]);
     
@@ -345,7 +366,11 @@ unsigned int blockIDGenerator(char *block){
     //char *val = getStringToHashFromBlockLine(line);
     //concatInto(&string_to_hash, getStringToHashFromBlockLine(line));
     line = strtok(NULL, delim);
-  }
+  } // end of big line
+
+
+  //printf("%s\n", string_to_hash);
+
 
   //printf("\n RESULT = %s\n", string_to_hash);
   unsigned long val = hash_test(string_to_hash) % MAP_SIZE;
@@ -657,7 +682,7 @@ static void add_instrumentation(void) {
           // clean the lines buffer
           clearInstr(&lines_to_instrument);
         }
-		
+    
         //fprintf(outf, use_64bit ? trampoline_fmt_64 : trampoline_fmt_32,
         //        R(MAP_SIZE));
 
