@@ -2710,7 +2710,7 @@ static void write_with_gap(void* mem, u32 len, u32 skip_at, u32 skip_len) {
 
 
 static u8 calibrate_case(char** argv, struct queue_entry* q, u8* use_mem,
-                         u32 handicap, u8 from_queue) {
+                         u32 handicap, u8 from_queue, u8 shw_sts) {
 
   static u8 first_trace[MAP_SIZE];
 
@@ -2744,7 +2744,7 @@ static u8 calibrate_case(char** argv, struct queue_entry* q, u8* use_mem,
 
     u32 cksum;
 
-    if (!first_run && !(stage_cur % stats_update_freq)) show_stats();
+    if (!first_run && !(stage_cur % stats_update_freq) && shw_sts) show_stats();
 
     write_to_testcase(use_mem, q->len);
 
@@ -3155,7 +3155,7 @@ static void write_crash_readme(void) {
    entry is saved, 0 otherwise. */
 
 
-static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
+static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault, u8 shw_sts) {
 
   u8  *fn_delta="";
   u8  hnb;
@@ -3201,7 +3201,7 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* Try to calibrate inline; this also calls update_bitmap_score() when
        successful. */
 
-    res = calibrate_case(argv, queue_top[CUR_PROG], mem, queue_cycle - 1, 0); // the error appears to be here
+    res = calibrate_case(argv, queue_top[CUR_PROG], mem, queue_cycle - 1, 0, shw_sts); // the error appears to be here
 
     if (res == FAULT_ERROR)
       FATAL("Unable to execute target application");
@@ -4326,7 +4326,7 @@ static void perform_dry_run(char** argv) {
 
     //printf("\tuse_mem = %s\n", use_mem);
   
-    res = calibrate_case(argv, q, use_mem, 0, 1);
+    res = calibrate_case(argv, q, use_mem, 0, 1, 0);
     //printf("after calibrate\n");
     //res = FAULT_TMOUT;
     ck_free(use_mem);
@@ -5274,7 +5274,7 @@ EXP_ST u8 common_fuzz_stuff(char** argv, u8* out_buf, u32 len) {
   }
 
   /* This handles FAULT_ERROR for us: */
-  queued_discovered[CUR_PROG] += save_if_interesting(argv, out_buf, len, fault);
+  queued_discovered[CUR_PROG] += save_if_interesting(argv, out_buf, len, fault, 1);
   //printf("after save_if_interesting in common_stuff\n");
   if (!(stage_cur % stats_update_freq) || stage_cur + 1 == stage_max)
     show_stats();
@@ -5713,7 +5713,7 @@ static u8 fuzz_one(char** argv) {
 
     if (queue_cur[CUR_PROG]->cal_failed < CAL_CHANCES) {
 
-      res = calibrate_case(argv, queue_cur[CUR_PROG], in_buf, queue_cycle - 1, 0);
+      res = calibrate_case(argv, queue_cur[CUR_PROG], in_buf, queue_cycle - 1, 0, 0);
 
       if (res == FAULT_ERROR)
         FATAL("Unable to execute target application");
@@ -7429,7 +7429,7 @@ static void sync_fuzzers(char** argv) {
         if (stop_soon) return;
 
         syncing_party = sd_ent->d_name;
-        queued_imported += save_if_interesting(argv, mem, st.st_size, fault);
+        queued_imported += save_if_interesting(argv, mem, st.st_size, fault, 1);
         syncing_party = 0;
 
         munmap(mem, st.st_size);
@@ -8600,20 +8600,24 @@ static void save_entry_in_prog_if_interesting(struct queue_entry *q, char **argv
     write_to_testcase(mem, len);
   fault = run_target(exec_tmout);
 
-  
+  /*
   if ( !(hnb = has_new_bits( virgin_bits )) ) {
       if (crash_mode) total_crashes++;
       //not interesting, do something
     }
     else{
-      add_entry_to_dir(q,CUR_PROG, 1);
+      //add_entry_to_dir(q,CUR_PROG, 1);
     }
-
+  */
     // TODO
+    /*
     switch (fault) {
       case FAULT_TMOUT:
         break;
     }
+    */
+
+    save_if_interesting(argv, mem, len, fault, 0);
 
     close(fd);
     //printf("after close fd\n");
