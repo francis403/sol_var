@@ -2843,7 +2843,7 @@ abort_calibration:
   stage_cur  = old_sc;
   stage_max  = old_sm;
 
-  if (!first_run) show_stats();
+  if (!first_run && shw_sts) show_stats();
 
   return fault;
 
