@@ -174,11 +174,33 @@ char* importantLineInfo(const char *line){
 
     if( strcmp(command, "icmp") == 0 ){
      
+      printf("line = %s\n", line);
+      char *divide_by_comma = (char*)  malloc ( sizeof(char) * strlen(line) + 1 );
+      strcpy(divide_by_comma, line);
+
       for(int i = 0; i < 3 && command != NULL ; i++){
-        //printf("%s ", command);
+        //printf(" command %s ", command);
         concatInto(&string_to_hash, command);
         command = strtok(NULL, delim);
       }
+
+      char *command_div_by_comma = strtok(divide_by_comma, ","); //divide the line into a line
+      for(int i = 0; i < 3 && command_div_by_comma != NULL ; i++){
+        unsigned int num_cmp= atoi(command_div_by_comma);
+        short isNumber = num_cmp != 0 || (command_div_by_comma[0] == '0' && strlen(command_div_by_comma) > 1) ;
+        if( isNumber ){
+          char str[20];
+          sprintf(str, "%d", num_cmp);
+          concatInto( &string_to_hash, str );
+        }
+        command_div_by_comma = strtok(NULL, ",");
+      }
+
+
+      //printf("line = %s\n", copy);
+
+      free(divide_by_comma);
+
     }
 
     else if( strcmp(command, "call") == 0 ){
@@ -280,6 +302,9 @@ char* importantLineInfo(const char *line){
   free(copy);
   //free(string_to_hash);
   
+  printf("result -> %s\n", string_to_hash);
+
+
   return string_to_hash;
 }
 
@@ -409,7 +434,7 @@ bool AFLCoverage::runOnModule(Module &M) {
 
       // TODO:  need to change this so we add a specific ID
       //unsigned int cur_loc = AFL_RET(MAP_SIZE-2);
-      unsigned int cur_loc = random() % MAP_SIZE;
+      //unsigned int cur_loc = random() % MAP_SIZE;
       //printf("%s\n", basic_block);
       unsigned int test = (hash_string(basic_block)) % MAP_SIZE ;
       const unsigned int res = test;
@@ -433,8 +458,8 @@ bool AFLCoverage::runOnModule(Module &M) {
       MapPtr->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
       Value *MapPtrIdx =
           IRB.CreateGEP(MapPtr, CurLoc);
-          //IRB.CreateGEP(MapPtr, IRB.CreateOr(CurLoc, CurLoc));
-          //IRB.CreateGEP(MapPtr, IRB.CreateXor(PrevLoc, PrevLoc)); // or of same is same
+          IRB.CreateGEP(MapPtr, IRB.CreateOr(CurLoc, CurLoc));
+          IRB.CreateGEP(MapPtr, IRB.CreateXor(PrevLoc, PrevLoc)); // or of same is same
 
       /* Update bitmap */
 
@@ -447,7 +472,7 @@ bool AFLCoverage::runOnModule(Module &M) {
       /* Set prev_loc to cur_loc >> 1 */
       
       StoreInst *Store =
-          IRB.CreateStore(ConstantInt::get(Int32Ty, cur_loc ), AFLPrevLoc);
+          IRB.CreateStore(ConstantInt::get(Int32Ty, test ), AFLPrevLoc);
       Store->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
 
       inst_blocks++;
