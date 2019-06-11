@@ -174,7 +174,7 @@ char* importantLineInfo(const char *line){
 
     if( strcmp(command, "icmp") == 0 ){
      
-      printf("line = %s\n", line);
+      //printf("line = %s\n", line);
       char *divide_by_comma = (char*)  malloc ( sizeof(char) * strlen(line) + 1 );
       strcpy(divide_by_comma, line);
 
