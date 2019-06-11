@@ -302,7 +302,7 @@ char* importantLineInfo(const char *line){
   free(copy);
   //free(string_to_hash);
   
-  printf("result -> %s\n", string_to_hash);
+  //printf("result -> %s\n", string_to_hash);
 
 
   return string_to_hash;
