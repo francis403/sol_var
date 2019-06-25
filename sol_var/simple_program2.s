@@ -84,7 +84,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000978a, %rcx
+movq $0x00004677, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -133,7 +133,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x000013b1, %rcx
+movq $0x0000cdf5, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -155,7 +155,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x000013b1, %rcx
+movq $0x00008fe8, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -177,7 +177,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x000013b1, %rcx
+movq $0x00002dcb, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -229,7 +229,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x00005a97, %rcx
+movq $0x00003e3c, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -252,7 +252,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000fcb3, %rcx
+movq $0x0000511d, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -281,7 +281,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000b2da, %rcx
+movq $0x000090cf, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -315,7 +315,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000b2da, %rcx
+movq $0x000090cf, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -380,7 +380,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000b2da, %rcx
+movq $0x000090cf, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -457,7 +457,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x00001717, %rcx
+movq $0x00002fc5, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx

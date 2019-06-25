@@ -34,7 +34,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000ca57, %rcx
+movq $0x000046fe, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -81,7 +81,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000e710, %rcx
+movq $0x0000b0fb, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx
@@ -189,7 +189,7 @@ movq %rdx,  0(%rsp)
 movq %rcx,  8(%rsp)
 movq %rax, 16(%rsp)
 movq %rsi, 24(%rsp)
-movq $0x0000283e, %rcx
+movq $0x00005ff3, %rcx
 call __afl_maybe_log
 movq 16(%rsp), %rax
 movq  8(%rsp), %rcx

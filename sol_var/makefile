@@ -69,13 +69,17 @@ factorial:
 
 fuzz:
 	#$(RUN) -m none -i input -o out ./fact ./simple2
-	$(RUN) -m none -i input -o out -q 1 -p ./simple 1 2 3 -p ./simple2 2
+	$(RUN) -m none -i input -o out -q 1  -p ./simple 1 2 3 -p ./simple2 2
 	#$(RUN) -m none -i input -o out -q 1 -p ./simple @@
 	#$(RUN) -m none -i input -o out -q 1 -p ./simple @@ -p ./simple2 @@
 	#$(RUN) -m none -i input -o out ./fact ./simple2
 	#$(RUN) -m none -i input -o out ./simple
 	#$(RUN) -m none -i input -o out ./fact
 	#$(RUN) -m none -i input -o out ./is_prime
+
+fuzz_test_u:
+	#$(RUN) -m none -i input -o out ./fact ./simple2
+	$(RUN) -m none -i input -o out -q 1 -n 1 -u  ./copy_out0 -p ./simple2 2
 
 fuzz_afl:
 	$(ALF_FUZZ) -m none -i input -o out -p ./simple 

@@ -96,6 +96,7 @@ EXP_ST u8 *in_dir,                    /* Input directory with test cases  */
           *in_bitmap,                 /* Input bitmap                     */
           *doc_path,                  /* Path to documentation dir        */
      	  *target_path[MAX_AMOUNT_OF_PROGS],
+     	  *extra_outdir, /* outdir with info about an arleady executed fuzzing process */
           *orig_cmdline;              /* Original command line            */
 
 EXP_ST u32 exec_tmout = EXEC_TIMEOUT; /* Configurable exec timeout (ms)   */
@@ -129,6 +130,7 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            run_over10m,               /* Run time over 10 minutes?        */
            persistent_mode,           /* Running in persistent mode?      */
            deferred_mode,             /* Deferred forkserver mode?        */
+     	   start_at_prog_index = 0,   /* the prog to start at */
            fast_cal;                  /* Try to calibrate faster?         */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
@@ -2118,6 +2120,8 @@ EXP_ST void init_forkserver_special(char** argv, u8 **path, s32 *forksrv_pid,
 
   ACTF("Spinning up the fork server...");
 
+  printf("fork_srv = %d\n", fork_srv);
+
   if (pipe(st_pipe) || pipe(ctl_pipe)) PFATAL("pipe() failed");
 
   *forksrv_pid = fork();
@@ -2207,7 +2211,7 @@ EXP_ST void init_forkserver_special(char** argv, u8 **path, s32 *forksrv_pid,
     close(out_dir_fd);
     close(dev_null_fd);
     close(dev_urandom_fd);
-    close(fileno(plot_file[CUR_PROG]));
+    close( fileno( plot_file[CUR_PROG] ) );
 
     /* This should improve performance a bit, since it stops the linker from
        doing extra work post-fork(). */
@@ -3365,6 +3369,145 @@ keep_as_crash:
   //printf("before ending\n");
 
   return keeping;
+
+}
+
+/* Write a modified test case, run program, process results. Handle
+   error conditions, returning 1 if it's time to bail out. This is
+   a helper function for fuzz_one(). */
+
+// TODO -> need to keep testing this
+
+EXP_ST u8 share_fuzz_info(char** argv, u8* fname, struct stat st) {
+
+  u8 fault;
+  s32 len, fd;
+  u8  *in_buf, *out_buf;
+
+  fd = open(fname, O_RDONLY);
+
+  if (fd < 0) PFATAL("Unable to open '%s'", fname);
+
+  len = st.st_size;
+
+  in_buf = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+  close(fd);
+
+  out_buf = ck_alloc_nozero(len);
+
+  if (post_handler) {
+
+    out_buf = post_handler(out_buf, &len);
+    if (!out_buf || !len) return 0;
+
+  }
+
+  memcpy(out_buf, in_buf, len); // the bug is here!
+
+  
+
+  write_to_testcase(out_buf, len);
+
+  fault = run_target(exec_tmout);
+
+  if (stop_soon) return 1;
+
+  queued_discovered[0] += save_if_interesting(argv, out_buf, len, fault, 0);
+  
+
+  return 0;
+
+}
+
+/* Read all testcases from the input directory, then queue them for testing.
+   Called at startup. */
+
+static void read_prev_outdir(u8 *outdit_dir, char **argv) {
+
+  struct dirent **nl;
+  s32 nl_cnt;
+  u32 i;
+  u8* fn;
+
+  /* Auto-detect non-in-place resumption attempts. */
+
+  fn = alloc_printf("%s/queue", outdit_dir);
+  if (!access(fn, F_OK)) outdit_dir = fn; else ck_free(fn);
+
+  ACTF("Scanning '%s'...", outdit_dir);
+
+  /* We use scandir() + alphasort() rather than readdir() because otherwise,
+     the ordering  of test cases would vary somewhat randomly and would be
+     difficult to control. */
+
+  nl_cnt = scandir(outdit_dir, &nl, NULL, alphasort);
+
+  if (nl_cnt < 0) {
+
+    if (errno == ENOENT || errno == ENOTDIR)
+
+      SAYF("\n" cLRD "[-] " cRST
+           "The input for extra info directory does not seem to be valid - try again. The fuzzer needs\n"
+           "    one or more test case to start with - ideally, a small file under 1 kB\n"
+           "    or so. The cases must be stored as regular files directly in the input\n"
+           "    directory.\n");
+
+    PFATAL("Unable to open '%s'", outdit_dir);
+
+  }
+
+  if (shuffle_queue && nl_cnt > 1) {
+
+    ACTF("Shuffling queue...");
+    shuffle_ptrs((void**)nl, nl_cnt);
+
+  }
+
+  for (i = 0; i < nl_cnt; i++) {
+
+    
+
+    u8* fn = alloc_printf("%s/%s", outdit_dir, nl[i]->d_name);
+    //u8* dfn = alloc_printf("%s/.state/deterministic_done/%s", outdit_dir, nl[i]->d_name);
+
+    //free(nl[i]); /* not tracked */
+  
+    struct stat st;
+
+    if (lstat(fn, &st) || access(fn, R_OK))
+      PFATAL("Unable to access '%s'", fn);
+
+    /* This also takes care of . and .. */
+
+    if (!S_ISREG(st.st_mode) || !st.st_size || strstr(fn, "/README.txt")) {
+
+      ck_free(fn);
+      //ck_free(dfn);
+      continue;
+
+    }
+
+    share_fuzz_info(argv, fn, st);
+
+  }
+
+  free(nl); /* not tracked */
+
+  if (!queued_paths) {
+
+    SAYF("\n" cLRD "[-] " cRST
+         "Looks like there are no valid test cases in the input directory! The fuzzer\n"
+         "    needs one or more test case to start with - ideally, a small file under\n"
+         "    1 kB or so. The cases must be stored as regular files directly in the\n"
+         "    input directory.\n");
+
+    FATAL("No usable test cases in '%s'", outdit_dir);
+
+  }
+
+  last_path_time = 0;
+  queued_at_start = queued_paths;
 
 }
 
@@ -7683,12 +7826,21 @@ static void getProgsBlockList(){
 **/
 static void init_all_forkservers(char **argv){
 
-  for(int i = 0; i < numbr_of_progs_under_test; i++){
-    check_binary(prog_names[i], &(target_path[i]));
-    init_forkserver_special(prog_args[i], &target_path[i], &forksrv_pid[i],
-        i, FORKSRV_FD + (i * 2));
-  }
+	printf("number of progs under test = %d\n", numbr_of_progs_under_test);
 
+  if( numbr_of_progs_under_test < 2 ){
+  	check_binary(prog_names[0], &(target_path[0]));
+  	printf("start_at_prog_index = %d\n", start_at_prog_index);
+    init_forkserver_special( prog_args[0], &target_path[0], &forksrv_pid[0],
+        0, FORKSRV_FD + (start_at_prog_index * 2) );
+  }
+  else{
+	  for(int i = 0; i < numbr_of_progs_under_test; i++){
+	    check_binary(prog_names[i], &(target_path[i]));
+	    init_forkserver_special(prog_args[i], &target_path[i], &forksrv_pid[i],
+	        i, FORKSRV_FD + (i * 2));
+	  }
+  }
   //getProgsBlockList();
 }
 
@@ -8700,7 +8852,7 @@ int main(int argc, char** argv) {
 
     if(numbr_of_progs_under_test > MAX_AMOUNT_OF_PROGS) FATAL("Number of progs under test exceed the max amount of %d", MAX_AMOUNT_OF_PROGS);
 
-  while ((opt = getopt(argc, argv, "+i:o:q:m:p")) > 0){
+  while ((opt = getopt(argc, argv, "+i:o:q:u:n:m:p")) > 0){
 
     switch (opt) {
 
@@ -8722,6 +8874,18 @@ int main(int argc, char** argv) {
       //printf("received value = %s\n", optarg);
       // receive the value in minutes
       switch_program_timer = 1000 * 60 * atoi(optarg);
+      break;
+
+    case 'u': 
+     	/* RECEIVE PATH TO OUTDIR WITH ARLEADY FUZZ INFO */
+    	if (extra_outdir) FATAL("Multiple -u options not supported");
+    	extra_outdir = optarg;
+      	break;
+    case 'n': 
+     	/*IF ONLY A SINGLE PROGRAM RECEIVE WITH WHICH IT WAS INSTRUMENTALIZED,
+     	OTHERWISE ASUMED TO BE 0 */
+      if( numbr_of_progs_under_test > 1 ) FATAL("ONLY ONE PROG ALLOWED WITH THIS OPTION");
+      start_at_prog_index = atoi(optarg);
       break;
    case 'p':
     break;
@@ -8769,9 +8933,15 @@ int main(int argc, char** argv) {
 
   if ( optind == argc || !in_dir || !out_dir ){ printf("here in this option of ours\n");usage(argv[0]);}
 
-  for(int i = 0; i < numbr_of_progs_under_test; i++ ){
-    out_dir_delta[i] = malloc(sizeof(char) * 40 + 1);
-    sprintf(out_dir_delta[i], "%s%d", out_dir, i);
+  if( numbr_of_progs_under_test < 2 ){
+  	out_dir_delta[0] = malloc( sizeof(char) * 40 + 1 );
+    sprintf(out_dir_delta[0], "%s%d", out_dir, start_at_prog_index);
+  }
+  else{
+	  for(int i = 0; i < numbr_of_progs_under_test; i++ ){
+	    out_dir_delta[i] = malloc(sizeof(char) * 40 + 1);
+	    sprintf(out_dir_delta[i], "%s%d", out_dir, i);
+	  }
   }
 
   setup_signal_handlers(); // not needed to execture the forkserver, but might as well have it
@@ -8848,6 +9018,21 @@ int main(int argc, char** argv) {
 
   write_stats_file(0, 0, 0, CUR_PROG);
   save_auto();
+
+  if( extra_outdir ){
+  	// pass all learned info
+  	char tmp[500];
+    sprintf(tmp, "%s/%s", extra_outdir, "queue");
+
+    //done for queue
+    read_prev_outdir(tmp, use_argv);
+
+    sprintf(tmp, "%s/%s", extra_outdir, "crashes");
+    read_prev_outdir(tmp, use_argv);
+    //printf("tmp = %s\n", tmp);
+    // idea, run the program and aplly saave_if_interesting
+     cull_queue();
+  }
 
   if (stop_soon) goto stop_fuzzing;
 
