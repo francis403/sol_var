@@ -304,7 +304,8 @@ unsigned int blockIDGenerator(char *block){
 
   char *delim = "\n";
 
-  char *line = strtok(copy, delim); //divide the line into a line
+  char *line = strtok(copy, delim); //divide the lines into a line
+
   while(line != NULL){
     //printf("line = %s\n", line);
     
@@ -322,14 +323,18 @@ unsigned int blockIDGenerator(char *block){
     char *command; // the word in the line (the command)
     
     // passar por todos os argumentos da linha
+
     while((command = strtok_r(rest, "\t", &rest))){
 
       //printf("command = %s first = %c\n", command, command[0]);
 
 
       // comando é inutil?
-      if(command[0] == '.' || command[1] == '.' || 
-        command[0] == '%' || isdigit(command[0]) ) { continue; }
+      //if(command[0] == '.' || command[1] == '.' || 
+      //  command[0] == '%' || isdigit(command[0]) ) { continue; }
+
+      if( command[0] == '.' || command[1] == '.' ) { continue; }
+
       // antigamente cortavamos isto
       if( command[0] == '$' && !isdigit(command[1]))
         continue;
@@ -341,7 +346,7 @@ unsigned int blockIDGenerator(char *block){
         continue;
       }
 
-      else if( command[0] == '$' ){
+      if( command[0] == '$' ){
           //printf("found $\n");
 
         char *com_rest = command;
@@ -353,7 +358,6 @@ unsigned int blockIDGenerator(char *block){
 
         continue;
       }
-
     
 
       //printf("%s\n", command);
